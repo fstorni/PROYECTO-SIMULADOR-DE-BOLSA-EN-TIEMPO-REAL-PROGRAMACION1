@@ -3,200 +3,297 @@ import json
 import os
 import time
 
-# ---------------- RECURSIVIDAD APLICADA ----------------
 def contar_chistes(chistes, i=None):
     if i is None:
-        i = len(chistes) - 1  # empieza desde el ultimo
+        i = len(chistes) - 1
     if i < 0:
         return
-    print(f"Chiste {len(chistes) - i}: {chistes[i]}")
+    print("Chiste " + str(len(chistes) - i) + ": " + chistes[i])
     contar_chistes(chistes, i - 1)
 
-#--------------------------SECCION_00----------------------
 def pide_datos_del_usuario():
-    condicion=False
+    condicion = False
     while not condicion:
-        nombre=input("Escriba su nombre: ")
+        nombre = input("Escriba su nombre: ")
         try:
-            edad=int(input("Ingrese su edad: ")) 
-            condicion=True
+            edad = int(input("Ingrese su edad: "))
         except ValueError:
-            print ("Por favor, ingrese un numero")
-    return nombre,edad 
-
-#----------------------------------------------------------                   
+            print("Por favor ingrese un número")
+            continue
+        if nombre.isalpha():
+            condicion = True
+        else:
+            print("Por favor ingrese un nombre que contenga solo letras")
+    return nombre, edad
 
 def crea_matriz():
-    columnas=4
-    filas=4
-    matriz=[[0 for c in range(columnas)] for f in range (filas)] 
-    return matriz
+    return [[0 for _ in range(4)] for _ in range(4)]
 
 def nombres_de_empresas():
-    nombres=["samsung","IBM","Mercado_libre","Amazon"]
-    return nombres 
+    return ["samsung", "IBM", "Mercado_libre", "Amazon"]
 
-#--------------------------SECCION_01----------------------
+def rellena(matriz, empresas):
+    for f in range(len(matriz)):
+        matriz[f][0] = empresas[f]
+        precio = 500 + random.uniform(-50, 50)
+        for c in range(1, len(matriz[0])):
+            variacion = random.uniform(-5, 5)
+            nuevo_valor = precio + variacion
+            precio = (precio + nuevo_valor) / 2
+            if precio < 1:
+                precio = 1
+            matriz[f][c] = round(precio, 2)
+    return matriz
 
-def rellena(matriz,empresas):
-    filas=len(matriz)
-    columnas=len(matriz[0])
-    for f in range (filas):
-        for c in range(columnas):
-            if c==0:
-                matriz[f][c]=empresas[f]
-            else :
-                matriz[f][c]=random.randint(1,10000)
-    return matriz 
-
-def impresion(matriz,resultado):
+def impresion(matriz, resultado):
+    print()
+    print("========== VALORES DE LAS ACCIONES ==========")
     for elementos in matriz:
-        print (elementos)
-    print ()    
-    print ("El promedio de las acciones en el dia(en este caso se toma 4 veces)")
+        print(elementos)
+    print()
+    print("Promedio de las acciones cambia en cada vuelta")
+    print("Estas acciones representan la tendencia de un día promediado")
+    print("Comprás cierta cantidad a un valor actual y en la próxima vuelta esa misma cantidad puede valer más o menos según cómo fluctúe el mercado")
     for fila in resultado:
-        print (f"{fila[0].upper()}  --> {fila[1]} --> Precio promedio ")
+        print(f"{fila[0].upper()} --> {fila[1]:.2f} --> Precio promedio")
+    print("==============================================")
+    print()
 
-def armamos_dic(tupla):
-    diccionario={}
-    try :
-        for dato in tupla :
-            empresa=dato[0]
-            precio=dato[1]
-            diccionario[empresa]=precio
-    except IndexError:
-        print("Error: La tupla no tiene el formato esperado (empresa,precio)")
-        return None
-    except Exception as e:
-        print("Error al procesar los datos:",e)
-        return None
-    try:
-        ruta_json = os.path.join(os.path.dirname(__file__), "Promedio_de_acciones.json")
-        with open (ruta_json,"w") as archivo:
-            json.dump(diccionario, archivo, indent=4)
-        try:
-            os.startfile(ruta_json)
-        except Exception as e :
-            print ("No se puede abrir el archivo automaticamente:",e)
-    except Exception as e:
-        print("Ocurrio un error al guardar el archivo JSON:", e)
-        return None
-    return diccionario
+def calcular_promedios(matriz):
+    return [(fila[0], sum(fila[1:])/3) for fila in matriz]
 
-#----------------------------- Seccion terminal ------------------------------
+def actualizar_valores(empresas):
+    matriz = crea_matriz()
+    matriz = rellena(matriz, empresas)
+    promedios = calcular_promedios(matriz)
+    return matriz, {empresa: promedio for empresa, promedio in promedios}
 
-def mostrar_portafolio(saldo, portafolio):
+def mostrar_portafolio(saldo, portafolio, precios, precios_anteriores):
     print()
     print("----- TU PORTAFOLIO -----")
-    print("Saldo disponible:", saldo)
-    for empresa, dinero in portafolio.items():
-        print(empresa, ": $", dinero)
+    print(f"Saldo disponible: ${saldo:.2f}")
+    for empresa, info in portafolio.items():
+        acciones = info["acciones"]
+        valor_actual = acciones * precios[empresa]
+        valor_anterior = acciones * precios_anteriores.get(empresa, precios[empresa])
+        diferencia = valor_actual - valor_anterior
+        signo = "+" if diferencia > 0 else ""
+        cambio_str = f"{signo}{diferencia:.2f}"
+        print(f"{empresa}: ${valor_actual:.2f} ganancia o pérdida respecto a vuelta anterior {cambio_str} acciones: {acciones:.2f} invertido: ${info['inversion']:.2f}")
     print("-------------------------")
+    print()
 
-def invertir(empresa, monto, saldo, portafolio):
-    if monto <= saldo:
-        saldo -= monto
-        portafolio[empresa] += monto
-        print(f"Invertiste ${monto} en {empresa}")
+def retirar(empresa, saldo, portafolio, precios):
+    acciones_disponibles = portafolio[empresa]["acciones"]
+    if acciones_disponibles <= 0:
+        print("No tenés acciones en esa empresa")
+        return saldo, 0, 0
+
+    print(f"Tenés {acciones_disponibles:.2f} acciones en {empresa}")
+    condicion = False
+    porcentaje = 0
+
+    while not condicion:
+        entrada = input("¿Qué porcentaje querés retirar? 0 a 100 o -1 para cancelar: ")
+        try:
+            porcentaje = float(entrada)
+        except:
+            print("Porcentaje inválido")
+        else:
+            if porcentaje == -1:
+                print("Operación cancelada")
+                return saldo, 0, 0
+            if 0 < porcentaje <= 100:
+                condicion = True
+            else:
+                print("Porcentaje fuera de rango. Intentá de nuevo o poné -1 para cancelar")
+
+    acciones_a_retirar = (porcentaje / 100) * acciones_disponibles
+    precio_actual = precios[empresa]
+    monto_retirado = acciones_a_retirar * precio_actual
+    inversion_unitaria = portafolio[empresa]["inversion"] / acciones_disponibles
+    inversion_parcial = acciones_a_retirar * inversion_unitaria
+    ganancia = monto_retirado - inversion_parcial
+
+    portafolio[empresa]["acciones"] -= acciones_a_retirar
+    portafolio[empresa]["inversion"] -= inversion_parcial
+    saldo += monto_retirado
+
+    if inversion_parcial > 0:
+        variacion = (ganancia / inversion_parcial) * 100
     else:
-        print("No tenes saldo suficiente")
-    return saldo
+        variacion = 0
 
-def retirar(empresa, monto, saldo, portafolio):
-    if portafolio[empresa] >= monto:
-        saldo += monto
-        portafolio[empresa] -= monto
-        print(f"Retiraste ${monto} de {empresa}")
-    else:
-        print("No tenes ese monto invertido en", empresa)
-    return saldo
+    print(f"Retiraste el {porcentaje:.2f}% de tus acciones {acciones_a_retirar:.2f} en {empresa} por ${monto_retirado:.2f} ganancia: {ganancia:.2f} variación: {variacion:.2f}%")
+    return saldo, ganancia, inversion_parcial
 
-def mostrar_empresas(empresas):
-    for i, empresa in enumerate(empresas):
-        print(i, "-", empresa)
+def elegir_empresa_valida(empresas):
+    while True:
+        print("------ EMPRESAS DISPONIBLES ------")
+        for i, empresa in enumerate(empresas):
+            print(i, "-", empresa)
+        print("----------------------------------")
+        entrada = input("Elegir empresa por número o -1 para salir: ")
+        if entrada == "-1":
+            return -1
+        try:
+            indice = int(entrada)
+            if 0 <= indice < len(empresas):
+                return indice
+            else:
+                print("Empresa inválida. Intentá de nuevo")
+        except ValueError:
+            print("Entrada inválida")
 
-def elegir_empresa(empresas):
-    mostrar_empresas(empresas)
-    return input("Elegir empresa por numero o -1 para salir: ")
+def procesar_accion(empresa, saldo, portafolio, precios):
+    valida = False
+    while not valida:
+        print()
+        print("--- OPERACIÓN EN: " + empresa.upper() + " ---")
+        accion = input("¿Invertir o retirar? i o r: ").lower()
+        ganancia = 0
+        inversion = 0
 
-def pedir_monto():
-    try:
-        return int(input("Cuanto dinero: "))
-    except ValueError:
-        print("Monto invalido")
-        return None
+        if accion == "i":
+            if saldo == 0:
+                print("No tenés saldo para invertir")
+                continue
 
-def procesar_accion(empresa, saldo, portafolio):
-    accion = input("Invertir o retirar i/r: ").lower()
-    if accion not in ["i", "r"]:
-        print("Opcion no valida")
-        return saldo
-    monto = pedir_monto()
-    if monto is None:
-        return saldo
-    if accion == "i":
-        saldo = invertir(empresa, monto, saldo, portafolio)
-    elif accion == "r":
-        saldo = retirar(empresa, monto, saldo, portafolio)
-    return saldo
+            valida_monto = False
+            while not valida_monto:
+                try:
+                    monto = int(input("¿Cuánto dinero?: "))
+                except ValueError:
+                    print("Monto inválido")
+                    continue
 
-#----------------------------- Seccion terminal - principal ------------------------------
+                if monto < 0:
+                    print("No se puede invertir un monto negativo")
+                elif monto > saldo:
+                    print(f"No tenés saldo suficiente - SALDO = ${saldo:.2f}")
+                elif monto > 9000:
+                    confirmar = input(f"¿Estás seguro que querés invertir ${monto}? Tal vez estás poniendo mucho en una sola empresa. s o n: ").lower()
+                    if confirmar == "s":
+                        valida_monto = True
+                    else:
+                        print("Operación cancelada")
+                else:
+                    valida_monto = True
+
+            saldo -= monto
+            precio_actual = precios[empresa]
+            acciones_compradas = monto / precio_actual
+            portafolio[empresa]["inversion"] += monto
+            portafolio[empresa]["acciones"] += acciones_compradas
+            print(f"Invertiste ${monto} en {empresa} comprando {acciones_compradas:.2f} acciones")
+            print(f"Esto representa un valor promedio de ${precio_actual:.2f} por acción en esta jornada")
+            inversion = monto
+            valida = True
+
+        elif accion == "r":
+            saldo, ganancia, inversion = retirar(empresa, saldo, portafolio, precios)
+            if inversion > 0 or ganancia != 0:
+                valida = True
+            else:
+                print("Intentá con otra empresa")
+        else:
+            print("Opción no válida")
+
+    print("--- Fin de la operación ---")
+    print()
+    return saldo, ganancia, inversion
 
 def interaccion_con_terminal(empresas):
-    saldo = 10000
-    portafolio = {empresa: 0 for empresa in empresas}
+
+    saldo = 10000  # SOLO se define UNA VEZ
+    portafolio = {empresa: {"inversion": 0, "acciones": 0} for empresa in empresas}
+    precios_anteriores = {empresa: 500 for empresa in empresas}
+    inversion_total = 0
+    ganancia_total = 0
     inicio = time.time()
     condicion = False
+
     while not condicion:
         if time.time() - inicio >= 600:
             print("Tiempo agotado")
             condicion = True
-        elif saldo == 0:
-            print("Ya no tenes saldo disponible para invertir")
-            condicion = True
-        else:
-            mostrar_portafolio(saldo, portafolio)
-            entrada = elegir_empresa(empresas)
-            if entrada == "-1":
+            continue
+
+        sin_acciones = all(info["acciones"] == 0 for info in portafolio.values())
+
+        if saldo == 0 and not sin_acciones:
+            print("No tenes saldo disponible pero tenes acciones en tu portafolio")
+            print("Queres continuar retirando o salir del programa")
+            decision = input("Ingresa -1 para salir o cualquier otra tecla para continuar retirando: ")
+            if decision == "-1":
                 print("Fin del programa")
                 condicion = True
-            else:
-                try:
-                    indice = int(entrada)
-                    if 0 <= indice < len(empresas):
-                        empresa = empresas[indice]
-                        saldo = procesar_accion(empresa, saldo, portafolio)
-                    else:
-                        print("Empresa invalida intenta de nuevo")
-                except ValueError:
-                    print("Entrada invalida")
+                continue
+
+        elif saldo == 0 and sin_acciones:
+            print("No tenes saldo ni inversiones para operar")
+            condicion = True
+            continue
+
+        matriz, precios = actualizar_valores(empresas)
+        impresion(matriz, list(precios.items()))
+        mostrar_portafolio(saldo, portafolio, precios, precios_anteriores)
+        precios_anteriores = precios.copy()
+        indice = elegir_empresa_valida(empresas)
+
+        if indice == -1:
+            print("Fin del programa")
+            condicion = True
+        else:
+            empresa = empresas[indice]
+            saldo, ganancia, inversion = procesar_accion(empresa, saldo, portafolio, precios)
+            ganancia_total += ganancia
+            inversion_total += inversion
+
     print()
-    print("Programa finalizado")
-    mostrar_portafolio(saldo, portafolio)
+    print("=== PROGRAMA FINALIZADO ===")
+    mostrar_portafolio(saldo, portafolio, precios, precios_anteriores)
+    print()
+    print("==== RESUMEN DE GANANCIA TOTAL ====")
+    print(f"Inversión total: ${inversion_total:.2f}")
+    print(f"Ganancia neta: ${ganancia_total:.2f}")
 
-#---------------Codigo_principal--------------------------------------------------------------
+    valor_total_actual = saldo
+    for empresa in portafolio:
+        acciones = portafolio[empresa]["acciones"]
+        valor_total_actual += acciones * precios[empresa]
 
-def main ():
-    nombre,edad=pide_datos_del_usuario()
-    print(f"El nombre del usurio es: {nombre} y su edad: {edad} anos")
-    matriz=crea_matriz()
-    empresas=nombres_de_empresas()
-    matriz_con_datos_01=rellena(matriz,empresas)
-    resultado=list(map(lambda fila:(fila[0],sum(fila[1:])/4),matriz))
-    convertido_a_tupla=(tuple(resultado))
-    covertimos_tupla_a_diccionario=armamos_dic(convertido_a_tupla)
-    impresion(matriz_con_datos_01,resultado)
+    diferencia = valor_total_actual - 10000
+    variacion_total = (diferencia / 10000) * 100
+
+    print(f"Valor final total: ${valor_total_actual:.2f}")
+    print(f"Variacion total respecto al saldo inicial: {variacion_total:.2f}%")
+    print("===================================")
+    print()
+    print("=== CONSEJO DE INVERSION ===")
+    if diferencia > 10:
+        print("Excelente resultado Lograste una ganancia sobre el valor total")
+    elif diferencia < -10:
+        print("Tu inversion general tuvo perdidas Revisa tu estrategia o diversifica mejor")
+    else:
+        print("Terminaste con un valor muy similar al inicial Quiza sea buen momento para ajustar tu estrategia")
+
+def main():
+    nombre, edad = pide_datos_del_usuario()
+    print()
+    print(f"Bienvenido o bienvenida {nombre} de {edad} años")
+    print()
+    empresas = nombres_de_empresas()
     interaccion_con_terminal(empresas)
-
     chistes = [
-    "Por que Python no va al gimnasio? Porque ya tiene clases y objetos.",
-    "Que hace un programador cuando tiene sueno? Ejecuta un thread y se duerme.",
-    "Que hace una funcion recursiva cuando se queda sola? Se llama a si misma.",
-    "Cual es el colmo de un programador? Tener un hijo con excepcion y no poder atraparlo."
+        "Por qué Python no va al gimnasio Porque ya tiene clases y objetos",
+        "Qué hace un programador cuando tiene sueño Ejecuta un thread y se duerme",
+        "Qué hace una función recursiva cuando se queda sola Se llama a sí misma",
+        "Cuál es el colmo de un programador Tener un hijo con excepción y no poder atraparlo"
     ]
-    
-    print("\nFin del simulador. Ahora, algunos chistes:")
+    print()
+    print("Fin del simulador. Ahora algunos chistes")
     contar_chistes(chistes)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

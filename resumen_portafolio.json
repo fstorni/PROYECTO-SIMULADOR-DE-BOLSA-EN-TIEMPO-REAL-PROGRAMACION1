@@ -1,0 +1,22 @@
+{
+    "saldo_final": 10163.39,
+    "valor_total_portafolio": 10163.39,
+    "portafolio": {
+        "samsung": {
+            "acciones": 0,
+            "valor_actual_total": 0.0
+        },
+        "IBM": {
+            "acciones": 0,
+            "valor_actual_total": 0.0
+        },
+        "Mercado_libre": {
+            "acciones": 0,
+            "valor_actual_total": 0.0
+        },
+        "Amazon": {
+            "acciones": 0,
+            "valor_actual_total": 0.0
+        }
+    }
+}
