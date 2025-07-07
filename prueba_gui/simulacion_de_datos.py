@@ -3,7 +3,7 @@ import json
 import os
 import time
 
-def contar_chistes(chistes, i=None):
+def contar_chistes(chistes, i=None):     #Muestra chistes de programacion.
     if i is None:
         i = len(chistes) - 1
     if i < 0:
@@ -11,7 +11,7 @@ def contar_chistes(chistes, i=None):
     print("Chiste " + str(len(chistes) - i) + ": " + chistes[i])
     contar_chistes(chistes, i - 1)
 
-def pide_datos_del_usuario():
+def pide_datos_del_usuario():      #Pide nombre y edad al usuario y valida los datos.
     condicion = False
     while not condicion:
         nombre = input("Escriba su nombre: ")
@@ -26,13 +26,13 @@ def pide_datos_del_usuario():
             print("Por favor ingrese un nombre que contenga solo letras")
     return nombre, edad
 
-def crea_matriz():
+def crea_matriz():        #Crea una matriz 4x4 y la llena con ceros.
     return [[0 for _ in range(4)] for _ in range(4)]
 
-def nombres_de_empresas():
+def nombres_de_empresas():     #Devuelve una lista de nombres de empresas.
     return ["samsung", "IBM", "Mercado_libre", "Amazon"]
 
-def rellena(matriz, empresas):
+def rellena(matriz, empresas):    #Rellena la matriz con precios simulados de acciones para cada empresa.
     for f in range(len(matriz)):
         matriz[f][0] = empresas[f]
         precio = 500 + random.uniform(-50, 50)
@@ -45,7 +45,7 @@ def rellena(matriz, empresas):
             matriz[f][c] = round(precio, 2)
     return matriz
 
-def impresion(matriz, resultado):
+def impresion(matriz, resultado):     #Muestra los valores de las acciones y sus promedios. 
     print()
     print("========== VALORES DE LAS ACCIONES ==========")
     for elementos in matriz:
@@ -59,16 +59,16 @@ def impresion(matriz, resultado):
     print("==============================================")
     print()
 
-def calcular_promedios(matriz):
+def calcular_promedios(matriz):    #Calcula el precio promedio de acciones de cada empresa.
     return [(fila[0], sum(fila[1:])/3) for fila in matriz]
 
-def actualizar_valores(empresas):
+def actualizar_valores(empresas):     #Actualiza los valores de la las acciones. 
     matriz = crea_matriz()
     matriz = rellena(matriz, empresas)
     promedios = calcular_promedios(matriz)
     return matriz, {empresa: promedio for empresa, promedio in promedios}
 
-def mostrar_portafolio(saldo, portafolio, precios, precios_anteriores):
+def mostrar_portafolio(saldo, portafolio, precios, precios_anteriores):   #Muestra el estado actual del portafolio de inversiones. 
     print()
     print("----- TU PORTAFOLIO -----")
     print(f"Saldo disponible: ${saldo:.2f}")
@@ -83,7 +83,7 @@ def mostrar_portafolio(saldo, portafolio, precios, precios_anteriores):
     print("-------------------------")
     print()
 
-def retirar(empresa, saldo, portafolio, precios):
+def retirar(empresa, saldo, portafolio, precios):    #Permite retirar un porcentaje de las acciones de una empresa y calcula la ganancia o perdida.
     acciones_disponibles = portafolio[empresa]["acciones"]
     if acciones_disponibles <= 0:
         print("No tenés acciones en esa empresa")
@@ -127,7 +127,7 @@ def retirar(empresa, saldo, portafolio, precios):
     print(f"Retiraste el {porcentaje:.2f}% de tus acciones {acciones_a_retirar:.2f} en {empresa} por ${monto_retirado:.2f} ganancia: {ganancia:.2f} variación: {variacion:.2f}%")
     return saldo, ganancia, inversion_parcial
 
-def elegir_empresa_valida(empresas):
+def elegir_empresa_valida(empresas):   #Permite al usuario elegir una empresa de la lista de empresas disponibles.
     while True:
         print("------ EMPRESAS DISPONIBLES ------")
         for i, empresa in enumerate(empresas):
@@ -145,7 +145,7 @@ def elegir_empresa_valida(empresas):
         except ValueError:
             print("Entrada inválida")
 
-def procesar_accion(empresa, saldo, portafolio, precios):
+def procesar_accion(empresa, saldo, portafolio, precios):   #Procesa la acción de invertir o retirar en una empresa especifica.
     valida = False
     while not valida:
         print()
@@ -203,7 +203,7 @@ def procesar_accion(empresa, saldo, portafolio, precios):
     print()
     return saldo, ganancia, inversion
 
-def interaccion_con_terminal(empresas):
+def interaccion_con_terminal(empresas):     #Interacción con el usuario para simular la compra y venta de acciones.
 
     saldo = 10000  # SOLO se define UNA VEZ
     portafolio = {empresa: {"inversion": 0, "acciones": 0} for empresa in empresas}
@@ -278,7 +278,7 @@ def interaccion_con_terminal(empresas):
     else:
         print("Terminaste con un valor muy similar al inicial Quiza sea buen momento para ajustar tu estrategia")
 
-def main():
+def main():  #Función principal que inicia el simulador de bolsa.
     nombre, edad = pide_datos_del_usuario()
     print()
     print(f"Bienvenido o bienvenida {nombre} de {edad} años")
